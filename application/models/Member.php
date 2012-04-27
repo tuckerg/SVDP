@@ -1,4 +1,6 @@
 <?php
+//Class represents all information on a SVDP member
+//Implements the fluent interface pattern
 class Application_Model_Member{
     private $userID = null;
     private $password = null;

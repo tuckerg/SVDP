@@ -3,12 +3,13 @@
 //Authored by: Matthew Tieman
 class App_Service_MemberService {
 	protected $db;
+	//Constructor creates a connection to the database
 	function __construct(){
 		$this->db = Zend_Db_Table::getDefaultAdapter();
 	}
         //Returns basic information of all of user's 'Open' cases
 	//Called: Automatically called when building the Memeber landing page
-        //@param:$user_id = user_id of the current member
+        //@Param: $user_id = user_id of the current member
 	public function GetUserOpenCases($user_id){
 		$select = $this->db->select()
 			->from(array('cn' => 'case_need'),
@@ -31,7 +32,9 @@ class App_Service_MemberService {
 		$results = $this->db->fetchAll($select);
 		return $this->BuildOpenCases($results);
 	}
-	
+	//Returns all information of a particular client nessesary to display the client's dossier
+	//Called: When an action is generated to display a single client's information
+	//@Param: $client_id = client ID# of the client whose information is to be displayed
 	public function GetClientById($client_id){
 		$select = $this->db->select()
 			->from(array('c' => 'client'),
@@ -64,7 +67,10 @@ class App_Service_MemberService {
 			$results = $this->db->fetchRow($select);
 			return $this->BuildClientDossier($results);
 	}
-	
+	//Returns an array of client case objects, each containing basic information of each case
+	//of a particular client
+	//Called: At the view client/cases page
+	//@Param: $client_id = client ID# of the client whose list of cases is to be displayed
 	public function GetClientCases($client_id){
 		$select = $this->db->select()
 			->from(array('cc' => 'client_case'),
@@ -87,7 +93,9 @@ class App_Service_MemberService {
 			$results = $this->db->fetchAll($select);
 			return $this->BuildClientCases($results);
 	}
-	
+	//Returns an array of ScheduleWeek objects each containing week number, start date, and
+	//the full name of the member on call
+	//Called: When generating the sidebar schedule
 	public function GetSchedule(){
         $select = $this->db->select()
             ->from(array('s' => 'schedule'),
@@ -126,7 +134,8 @@ class App_Service_MemberService {
 		}
 		return $cases;
 	}
-	
+	//Populates a Client object with all information relevent to the client
+	//Client object contains an Addr object to hold detail of current address
 	private function BuildClientDossier($results){
 		$client = new Application_Model_Client();
 		$address = new Application_Model_Addr();
@@ -155,7 +164,7 @@ class App_Service_MemberService {
 			->setCurrentAddr($address);
 		return $client;
 	}
-	
+	//Builds an array of Case objects each containing details about the appropriot case
 	private function BuildClientCases($results){
 		$cases = array();
 		foreach($results as $row){
@@ -174,7 +183,8 @@ class App_Service_MemberService {
 		}
 		return $cases;
 	}
-	
+	//Builds an array of ScheduleWeek objects each containing the week number
+	//start date, and the full name of the member on call
 	private function BuildSchedule($results){
 		$schedule = array();
 		foreach($results as $row){

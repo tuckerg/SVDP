@@ -65,9 +65,38 @@ class App_Service_MemberService {
 			return $this->BuildClientDossier($results);
 	}
 	
-	public fucntion GetClientCases($client_id){
+	public function GetClientCases($client_id){
 		$select = $this->db->select()
-			->from()
+			->from(array('cc' => 'client_case'),
+				     array('caseID' => 'cc.case_id',
+					   'needs' => new Zend_Db_Expr("GROUP_CONCAT( cn.need SEPARATOR', ')"),
+					   'totalAmount' => new Zend_Db_Expr('SUM(cn.amount)'),
+					   'dateRequested' => 'cc.opened_date',
+					   'status' => 'cc.status',
+					   'addByName' => new Zend_Db_Expr("CONCAT(u.first_name,' ', u.last_name)"),
+					   'visitDate' => 'visit_date',
+					   'hours' => 'hours',
+					   'miles' => 'miles'))
+			->joinInner(array('h' => 'household'), 'cc.household_id = h.household_id')
+			->joinInner(array('c' => 'client'), 'c.client_id = h.mainclient_id')
+			->joinInner(array('cn' => 'case_need'), 'cc.case_id = cn.case_id')
+			->joinInner(array('u' => 'user'), 'u.user_id = cc.opened_user_id')
+			->joinLeft(array('cv' => 'case_visit'), 'cc.case_id = cv.case_id')
+			->group('cc.case_id')
+			->where('c.client_id = ?', $client_id);
+			$results = $this->db->fetchAll($select);
+			return $this->BuildClientCases($results);
+	}
+	
+	public function GetSchedule(){
+        $select = $this->db->select()
+            ->from(array('s' => 'schedule'),
+                   array('week_id',
+                   'startDate' => 's.start_date',
+                   'fullUserName' => new Zend_Db_Expr("CONCAT(u.first_name,' ', u.last_name)")))
+            ->joinLeft(array('u' => 'user'), 's.user_id = u.user_id');
+            $results = $this->db->fetchAll($select);
+            return $this->BuildSchedule($results);
 	}
 	//Builds an array of Case objects populated with basic information about each case
 	//Includes a Client object to hold basic client information with the appropriate  case
@@ -130,7 +159,32 @@ class App_Service_MemberService {
 	private function BuildClientCases($results){
 		$cases = array();
 		foreach($results as $row){
-			
+			$case = new Application_Model_Case();
+			$case
+			->setId($results['caseID'])
+			->setNeedList($results['needs'])
+			->setTotalAmount($results['totalAmount'])
+			->setOpenedDate($results['dateRequested'])
+			->setStatus($results['status'])
+			->setOpenedByName($results['addByName'])
+			->setLastVisit($results['visitDate'])
+			->setTotalHours($results['hours'])
+			->setTotalMils($results['miles']);
+			$cases[] = $case;
 		}
+		return $cases;
+	}
+	
+	private function BuildSchedule($results){
+		$schedule = array();
+		foreach($results as $row){
+			$week = new Application_Model_SheduleWeek();
+			$week
+			->setWeekId($results['week_id'])
+			->setStartDate($results['startDate'])
+			->setUserName($results['fullUserName']);
+			$schedule[] = $week;
+		}
+		return $schedule;
 	}
 }

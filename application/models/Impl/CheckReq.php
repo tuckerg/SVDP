@@ -6,7 +6,7 @@
  * Note: This class implements the fluent interface pattern, i.e., consecutive set method calls can
  * be chained together: `$case->setId(...)->setRequestDate(...)` and so on.
  */
-class Application_Model_CheckReq
+class Application_Model_Impl_CheckReq
 {
 
     private $_id = null;
@@ -14,6 +14,7 @@ class Application_Model_CheckReq
     private $_requestDate = null;
 
     private $_case = null;
+    
 
     /* Generic get/set methods: */
 

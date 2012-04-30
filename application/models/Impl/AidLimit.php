@@ -2,7 +2,7 @@
 //Class represents all limitations on the amount of aid that can be given, number of times aid can be given
 //for both cases and client life time, as well as currently available funds
 //Implements the fluent interface pattern
-class Application_Model_AidLimit{
+class Application_Model_Impl_AidLimit{
     private $availableFunds = null;
     private $yearLimit = null;
     private $lifeLimit = null;

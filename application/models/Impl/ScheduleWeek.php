@@ -1,7 +1,7 @@
 <?php
 //Class represents a single week in the on-call schedule
 //Contains week number, start date, and full name of the member on call
-class Application_Model_ScheduleWeek{
+class Application_Model_Impl_ScheduleWeek{
     private $weekID = null;
     private $startDate = null;
     private $fullUserName = null;

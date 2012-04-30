@@ -1,7 +1,7 @@
 <?php
 //Class represents all information on a SVDP member
 //Implements the fluent interface pattern
-class Application_Model_Member{
+class Application_Model_Impl_Member{
     private $userID = null;
     private $password = null;
     private $firstName = null;

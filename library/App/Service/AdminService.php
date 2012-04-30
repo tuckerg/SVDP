@@ -38,7 +38,7 @@ class App_Service_AdminService {
     private function BuildAllMembers($results){
         $members = array();
         foreach($results as $row){
-            $member = new Application_Model_Member();
+            $member = new Application_Model_Impl_Member();
             $member
             ->setUserId($results['user_id'])
             ->setPassword($results['password'])
@@ -57,7 +57,7 @@ class App_Service_AdminService {
     //Builds a AidLimit object that contains current SVDP funds and current limits
     //on aid with respect to amount/case, amount/year, amount in life time, and number of cases
     private function BuildFundsAndLimits($results){
-        $limits = new Application_Model_AidLimit();
+        $limits = new Application_Model_Impl_AidLimit();
         $limits
         ->setAvailableFunds($results['available_funds'])
         ->setYearLimit($results['year_limit'])
@@ -71,7 +71,7 @@ class App_Service_AdminService {
     private function BuildSchedule($results){
         $schedule = array();
         foreach($results as $row){
-            $week = new Application_Model_SheduleWeek();
+            $week = new Application_Model_Impl_SheduleWeek();
             $week
             ->setWeekId($results['week_id'])
             ->setStartDate($results['startDate'])

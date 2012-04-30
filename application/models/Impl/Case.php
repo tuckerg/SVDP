@@ -7,7 +7,7 @@
  * Note: This class implements the fluent interface pattern, i.e., consecutive set method calls can
  * be chained together: `$case->setId(...)->setOpenedDate(...)` and so on.
  */
-class Application_Model_Case
+class Application_Model_Impl_Case
 {
 
     private $_id = null;
@@ -35,6 +35,8 @@ class Application_Model_Case
     private $_totalMiles = null;
     
     private $_client = null;
+    
+    private $_clientPhone = null;
     
 
     /* Generic get/set methods: */
@@ -165,6 +167,15 @@ class Application_Model_Case
     
     public function setClient($client){
         $this->_client = $client;
+        return $this;
+    }
+    
+    public function getClientPhone(){
+        return $this->_clientPhone;
+    }
+    
+    public function setClientPhone($phone){
+        $this->_clientPhone;
         return $this;
     }
 }

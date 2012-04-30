@@ -7,7 +7,7 @@
  * Note: This class implements the fluent interface pattern, i.e., consecutive set method calls can
  * be chained together: `$client->setId(...)->setFirstName(...)` and so on.
  */
-class Application_Model_Client
+class Application_Model_Impl_Client
 {
 
     private $_id = null;
@@ -41,6 +41,10 @@ class Application_Model_Client
     private $_currentAddr = null;
 
     private $_doNotHelp = null;
+    
+    private $_spouseFirst = null;
+    
+    private $_spouseLast = null;
 
     /* Generic get/set methods: */
 
@@ -217,6 +221,24 @@ class Application_Model_Client
     public function setDoNotHelp($doNotHelp)
     {
         $this->_doNotHelp = $doNotHelp;
+        return $this;
+    }
+    
+    public function getSpouseFirst(){
+        return $this->_spouseFirst;
+    }
+    
+    public function setSpouseFirst($first){
+        $this->_spouseFirst = $first;
+        return $this;
+    }
+    
+    public function getSpouseLast(){
+        return $this->_spouseLast;
+    }
+    
+    public function setSpouseLast($last){
+        $this->_spouseLast = $last;
         return $this;
     }
 

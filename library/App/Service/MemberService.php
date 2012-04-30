@@ -64,8 +64,8 @@ class App_Service_MemberService {
 			->joinLeft(array('a' => 'address'), 'h.address_id = a.address_id')
 			->joinLeft(array('d' => 'do_not_help'), 'c.client_id = d.client_id')
 			->where('c.client_id = ?', $client_id);
-			$results = $this->db->fetchRow($select);
-			return $this->BuildClientDossier($results);
+		$results = $this->db->fetchRow($select);
+		return $this->BuildClientDossier($results);
 	}
 	//Returns an array of client case objects, each containing basic information of each case
 	//of a particular client
@@ -90,8 +90,28 @@ class App_Service_MemberService {
 			->joinLeft(array('cv' => 'case_visit'), 'cc.case_id = cv.case_id')
 			->group('cc.case_id')
 			->where('c.client_id = ?', $client_id);
-			$results = $this->db->fetchAll($select);
-			return $this->BuildClientCases($results);
+		$results = $this->db->fetchAll($select);
+		return $this->BuildClientCases($results);
+	}
+	
+	public function GetCaseById($case_id){
+		$select = $this->db->select()
+			->from(array('client_case' => 'cc'),
+			       array('clientID' => 'c.client_id',
+				     'clientFirstName' => 'c.first_name',
+				     'clientLastName' => 'c.last_name',
+				     'phone' => new Zend_Db_Expr("COALESCE(c.home_phone, c.cell_phone, c.work_phone)"),
+				     'caseID' => $case_id,
+				     'needs' => new Zend_Db_Expr("GROUP_CONCAT( cn.need SEPARATOR', ')"),
+				     'totalAmount' => new Zend_Db_Expr('SUM(cn.amount)'),
+				     'openedDate' => 'cc.opened_date'))
+			->joinInner(array('h' => 'household'), 'cc.household_id = h.household_id')
+			->joinInner(array('c' => 'client'), 'h.mainclient_id = c.client_id')
+			->joinLeft(array('cn' => 'case_need'), 'cn.case_id = cc.case_id')
+			->group('cc.case_id')
+			->where('cc.case_id = ?', $case_id);
+		$results = $this->db->fetchAll($select);
+		return $this->BuildCase($results);
 	}
 	//Returns an array of ScheduleWeek objects each containing week number, start date, and
 	//the full name of the member on call
@@ -106,13 +126,72 @@ class App_Service_MemberService {
             $results = $this->db->fetchAll($select);
             return $this->BuildSchedule($results);
 	}
+	//Creates a new client, new address, new household, and if the client is married a
+	//client entry for thier spouse as well. The spouse entry will contain only auto generated id,
+	//first name, last name, created date, member parish, and the id of the user who created the
+	//primary client.
+	//Called: When action for client creation is generated
+	//@Param: $client = Client object populated with information about client, client object
+	//contains an Addr object populated with the address information from the form. 
+	public function CreateClient($client){
+		$address = $client->getCurrentAddr();
+		$date = new Zend_Date();
+		$spouseId = null;
+		//Information to create the client entry
+		$clientData = array(
+			      'created_user_id' => $client->getUserId(),
+			      'first_name' => $client->getFirstName(),
+			      'last_name' => $client->getLastName(),
+			      'other_name' => $client->getOtherName(),
+			      'marriage_status' => $client->isMarried(),
+			      'birthdate' => $client->getBirthdate(),
+			      'ssn4' => $client->getSsn4(),
+			      'cell_phone' => $client->getCellPhone(),
+			      'home_phone' => $client->getHomePhone(),
+			      'work_phone' => $client->getWorkPhone(),
+			      'created_date' => $date->get('YYYY-MM-dd'),
+			      'member_parish' => $client->getParish(),
+			      'veteran_flag' => $client->isVeteran());
+		$this->db->insert('client', $clientData);
+		$clientId = $this->db->lastInsertId('client');
+		//Check if client is married, if so creates an entry for the spouse
+		if($client->isMarried()){
+			$spouseData = array(
+			      'created_user_id' => $client->getUserId(),
+			      'first_name' => $client->getSpouseFirst(),
+			      'last_name' => $client->getSpouseLast(),
+			      'marriage_status' => $client->isMarried(),
+			      'created_date' => $date->get('YYYY-MM-dd'),
+			      'member_parish' => $client->getParish());
+			$this->db->insert('client', $spouseData);
+			$spouseId = $this->db->lastInsertId('client');
+		}
+		//Create the address entry
+		$addressData = array(
+				'client_id' => $clientId,
+				'street' => $address->getStreet(),
+				'apt' => $address->getApt(),
+				'city' => $address->getCity(),
+				'state' => $address->getState(),
+				'zipcode' => $address->getZip(),
+				'reside_parish' => $address->getResideParish());
+		$this->db->insert('address', $addressData);
+		$addressId = $this->db->lastInsertId('address');
+		//Create the household entry
+		$householdData = array(
+				'address_id' => $addressId,
+				'mainclient_id' => $clientId,
+				'spouse_id' => $spouseId,
+				'current_flag' => '1');
+		$this->db->insert('household', $householdData);
+	}
 	//Builds an array of Case objects populated with basic information about each case
 	//Includes a Client object to hold basic client information with the appropriate  case
 	private function BuildOpenCases($results){
 		$cases = array();
 		foreach($results as $row){
-			$case = new Application_Model_Case();
-			$client = new Application_Model_Client();
+			$case = new Application_Model_Impl_Case();
+			$client = new Application_Model_Impl_Client();
 
 			$client
 			->setId($row['clientID'])
@@ -137,8 +216,8 @@ class App_Service_MemberService {
 	//Populates a Client object with all information relevent to the client
 	//Client object contains an Addr object to hold detail of current address
 	private function BuildClientDossier($results){
-		$client = new Application_Model_Client();
-		$address = new Application_Model_Addr();
+		$client = new Application_Model_Impl_Client();
+		$address = new Application_Model_Impl_Addr();
 		$address
 			->setStreet($results['street'])
 			->setApt($results['aptID'])
@@ -168,7 +247,7 @@ class App_Service_MemberService {
 	private function BuildClientCases($results){
 		$cases = array();
 		foreach($results as $row){
-			$case = new Application_Model_Case();
+			$case = new Application_Model_Impl_Case();
 			$case
 			->setId($results['caseID'])
 			->setNeedList($results['needs'])
@@ -188,7 +267,7 @@ class App_Service_MemberService {
 	private function BuildSchedule($results){
 		$schedule = array();
 		foreach($results as $row){
-			$week = new Application_Model_SheduleWeek();
+			$week = new Application_Model_Impl_SheduleWeek();
 			$week
 			->setWeekId($results['week_id'])
 			->setStartDate($results['startDate'])
@@ -196,5 +275,19 @@ class App_Service_MemberService {
 			$schedule[] = $week;
 		}
 		return $schedule;
+	}
+	
+	private function BuildCase($results){
+		$case = new Application_Model_Impl_Case();
+		$case
+		->setClientID($results['clientID'])
+		->setClientFirstName($results['clientFirstName'])
+		->setClientLastName($results['clientLastName'])
+		->setClientPhone($results['phone'])
+		->setId($results['caseId'])
+		->setNeedList($results['needs'])
+		->setTotalAmount($results['totalAmount'])
+		->setOpenedDate($results['openedDate']);
+		return $case;
 	}
 }

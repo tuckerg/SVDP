@@ -7,7 +7,7 @@
  * Note: This class implements the fluent interface pattern, i.e., consecutive set method calls can
  * be chained together: `$address->setId(...)->setStreet(...)` and so on.
  */
-class Application_Model_Addr
+class Application_Model_Impl_Addr
 {
     private $_id = null;
 
@@ -20,6 +20,8 @@ class Application_Model_Addr
     private $_state = null;
 
     private $_zip = null;
+    
+    private $_reside_parish = null;
 
     /* Generic get/set methods: */
 
@@ -87,6 +89,15 @@ class Application_Model_Addr
     public function setZip($zip)
     {
         $this->_zip = $zip;
+        return $this;
+    }
+    
+    public function getResideParish(){
+        return $this->_reside_parish;
+    }
+    
+    public function setResideParish($parish){
+        $this->_reside_parish = $parish;
         return $this;
     }
 

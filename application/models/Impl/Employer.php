@@ -51,12 +51,3 @@ class Application_Model_Impl_Employer{
             return $this;
         }
     } 
-
-
-
-
-
-
-
-
-GitHub Links

@@ -309,7 +309,7 @@ class App_Service_Search
         $clients = array();
 
         foreach ($dbResults as $dbResult) {
-            $addr = new Application_Model_Addr();
+            $addr = new Application_Model_Impl_Addr();
             $addr
                 ->setId($dbResult['address_id'])
                 ->setStreet($dbResult['street'])
@@ -318,7 +318,7 @@ class App_Service_Search
                 ->setState($dbResult['state'])
                 ->setZip($dbResult['zipcode']);
 
-            $client = new Application_Model_Client();
+            $client = new Application_Model_Impl_Client();
             $client
                 ->setId($dbResult['client_id'])
                 ->setFirstName($dbResult['first_name'])
@@ -340,7 +340,7 @@ class App_Service_Search
         $cases = array();
 
         foreach ($dbResults as $dbResult) {
-            $client = new Application_Model_Client();
+            $client = new Application_Model_Impl_Client();
             $client
                 ->setId($dbResult['client_id'])
                 ->setFirstName($dbResult['first_name'])
@@ -369,7 +369,7 @@ class App_Service_Search
         $checkReqs = array();
 
         foreach ($dbResults as $dbResult) {
-            $client = new Application_Model_Client();
+            $client = new Application_Model_Impl_Client();
             $client
                 ->setId($dbResult['client_id'])
                 ->setFirstName($dbResult['first_name'])
@@ -378,7 +378,7 @@ class App_Service_Search
                 ->setHomePhone($dbResult['home_phone'])
                 ->setWorkPhone($dbResult['work_phone']);
 
-            $case = new Application_Model_Case();
+            $case = new Application_Model_Impl_Case();
             $case
                 ->setId($dbResult['case_id'])
                 ->setOpenedDate($dbResult['opened_date'])
@@ -386,7 +386,7 @@ class App_Service_Search
                 ->setTotalAmount($dbResult['amount'])
                 ->setClient($client);
 
-            $checkReq = new Application_Model_CheckReq();
+            $checkReq = new Application_Model_Impl_CheckReq();
             $checkReq
                 ->setId($dbResult['checkrequest_id'])
                 ->setRequestDate($dbResult['request_date'])

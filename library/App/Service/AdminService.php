@@ -7,6 +7,7 @@ class App_Service_AdminService {
     function __construct(){
 	$this->db = Zend_Db_Table::getDefaultAdapter();
     }
+    
     //Returns an array of Member objects each containing basic information of each SVDP member
     public function GetAllMembers(){
         $select = $this->db->select()
@@ -14,6 +15,7 @@ class App_Service_AdminService {
         $results = $this->db->fetchAll($select);
         return $this->BuildAllMembers($results);
     }
+    
     //Returns an AidLimit object containing current SVDP funds and current limits
     //on aid with respect to amount/case, amount/year, amount in life time, and number of cases
     public function GetFundsAndLimits(){
@@ -22,6 +24,7 @@ class App_Service_AdminService {
         $results = $this->db->fetchRow($select);
         return $this->BuildFundsAndLimits($results);
     }
+    
     //Returns an array of ScheduleWeek objects each containing information about which
     //member is on call and when
     public function GetSchedule(){
@@ -34,6 +37,17 @@ class App_Service_AdminService {
             $results = $this->db->fetchAll($select);
             return $this->BuildSchedule($results);
     }
+    
+    public function UpdateFundsAndLimits($limits){
+	$newAid = array(
+	    'available_funds' => $limits->getAvailableFunds(),
+	    'year_limit' => $limits->getYearLimit(),
+	    'lifetime_limit' => $limits->getLifeLimit(),
+	    'case_limit' => $limits->getCaseLimit(),
+	    'casefund_limit' => $limits->getCaseFundLimit());
+	$this->db->update('parish_funds', $newAid);
+    }
+    
     //Builds an array of Member objects each containing all information of each SVDP member
     private function BuildAllMembers($results){
         $members = array();
@@ -54,6 +68,7 @@ class App_Service_AdminService {
         }
         return $members;
     }
+    
     //Builds a AidLimit object that contains current SVDP funds and current limits
     //on aid with respect to amount/case, amount/year, amount in life time, and number of cases
     private function BuildFundsAndLimits($results){
@@ -66,6 +81,7 @@ class App_Service_AdminService {
         ->setCaseFundLimit($results['casefund_limit']);
         return $limits;
     }
+    
     //Builds an array of ScheduleWeek objects representing the entire schedule
     //each containing information on which SVDP member is on call and when
     private function BuildSchedule($results){

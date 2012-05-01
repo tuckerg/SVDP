@@ -137,53 +137,30 @@ class App_Service_MemberService {
 		$address = $client->getCurrentAddr();
 		$date = new Zend_Date();
 		$spouseId = null;
-		//Information to create the client entry
-		$clientData = array(
-			      'created_user_id' => $client->getUserId(),
-			      'first_name' => $client->getFirstName(),
-			      'last_name' => $client->getLastName(),
-			      'other_name' => $client->getOtherName(),
-			      'marriage_status' => $client->isMarried(),
-			      'birthdate' => $client->getBirthdate(),
-			      'ssn4' => $client->getSsn4(),
-			      'cell_phone' => $client->getCellPhone(),
-			      'home_phone' => $client->getHomePhone(),
-			      'work_phone' => $client->getWorkPhone(),
-			      'created_date' => $date->get('YYYY-MM-dd'),
-			      'member_parish' => $client->getParish(),
-			      'veteran_flag' => $client->isVeteran());
-		$this->db->insert('client', $clientData);
+		
+		$this->InsertClient($client, $date);
 		$clientId = $this->db->lastInsertId('client');
+		
 		//Check if client is married, if so creates an entry for the spouse
 		if($client->isMarried()){
-			$spouseData = array(
-			      'created_user_id' => $client->getUserId(),
-			      'first_name' => $client->getSpouseFirst(),
-			      'last_name' => $client->getSpouseLast(),
-			      'marriage_status' => $client->isMarried(),
-			      'created_date' => $date->get('YYYY-MM-dd'),
-			      'member_parish' => $client->getParish());
-			$this->db->insert('client', $spouseData);
+			$this->InsertSpouse($client, $date);
 			$spouseId = $this->db->lastInsertId('client');
 		}
+		
 		//Create the address entry
-		$addressData = array(
-				'client_id' => $clientId,
-				'street' => $address->getStreet(),
-				'apt' => $address->getApt(),
-				'city' => $address->getCity(),
-				'state' => $address->getState(),
-				'zipcode' => $address->getZip(),
-				'reside_parish' => $address->getResideParish());
-		$this->db->insert('address', $addressData);
+		$this->InsertAddress($clientId, $address);
 		$addressId = $this->db->lastInsertId('address');
+		
 		//Create the household entry
-		$householdData = array(
-				'address_id' => $addressId,
-				'mainclient_id' => $clientId,
-				'spouse_id' => $spouseId,
-				'current_flag' => '1');
-		$this->db->insert('household', $householdData);
+		$this->InsertHouseHold($clientId, $spouseId, $addressId);
+		
+		//Create the employment entry
+		$this->InsertEmployment($clientId, $client->getEmployment());
+		
+		//Update do-not-help
+		if($client->isDoNotHelp())
+			$this->MarkDoNotHelp($client, $date);
+		
 	}
 	//Builds an array of Case objects populated with basic information about each case
 	//Includes a Client object to hold basic client information with the appropriate  case
@@ -289,5 +266,75 @@ class App_Service_MemberService {
 		->setTotalAmount($results['totalAmount'])
 		->setOpenedDate($results['openedDate']);
 		return $case;
+	}
+	
+	private function InsertClient($client, $date){
+		$clientData = array(
+			      'created_user_id' => $client->getUserId(),
+			      'first_name' => $client->getFirstName(),
+			      'last_name' => $client->getLastName(),
+			      'other_name' => $client->getOtherName(),
+			      'marriage_status' => $client->isMarried(),
+			      'birthdate' => $client->getBirthdate(),
+			      'ssn4' => $client->getSsn4(),
+			      'cell_phone' => $client->getCellPhone(),
+			      'home_phone' => $client->getHomePhone(),
+			      'work_phone' => $client->getWorkPhone(),
+			      'created_date' => $date->get('YYYY-MM-dd'),
+			      'member_parish' => $client->getParish(),
+			      'veteran_flag' => $client->isVeteran());
+		$this->db->insert('client', $clientData);
+	}
+	
+	private function InsertSpouse($client, $date){
+		$spouseData = array(
+			'created_user_id' => $client->getUserId(),
+		      'first_name' => $client->getSpouseFirst(),
+		      'last_name' => $client->getSpouseLast(),
+		      'marriage_status' => $client->isMarried(),
+		      'created_date' => $date->get('YYYY-MM-dd'),
+		      'member_parish' => $client->getParish());
+		$this->db->insert('client', $spouseData);
+	}
+	
+	private function InsertAddress($clientId, $address){
+		$addressData = array(
+			'client_id' => $clientId,
+			'street' => $address->getStreet(),
+			'apt' => $address->getApt(),
+			'city' => $address->getCity(),
+			'state' => $address->getState(),
+			'zipcode' => $address->getZip(),
+			'reside_parish' => $address->getResideParish());
+		$this->db->insert('address', $addressData);
+	}
+	
+	private function InsertHouseHold($clientId, $spouseId, $addressId){
+		$householdData = array(
+			'address_id' => $addressId,
+			'mainclient_id' => $clientId,
+			'spouse_id' => $spouseId,
+			'current_flag' => '1');
+		$this->db->insert('household', $householdData);
+	}
+	
+	private function InsertEmployment($client_id, $employment){
+		foreach($employment as $job){
+			$jobData = array(
+				'client_id' => $client_id,
+				'company' => $job->getCompany(),
+				'position' => $job->getPosition(),
+				'start_date' => $job->getStartDate(),
+				'end_date' => $job->getEndDate());
+			$this->db->insert('employment', $jobData);
+		}
+	}
+	
+	private function MarkDoNotHelp($client, $date){
+		$noHelpData = array(
+				'client_id' => $client->getId(),
+				'created_user_id' => $client->setUserId(),
+				'added_date' => $date->get('YYYY-MM-dd'));
+		$this->db->insert('do_not_help', $noHelpData);
 	}
 }

@@ -154,8 +154,15 @@ class App_Service_MemberService {
 		//Create the household entry
 		$this->InsertHouseHold($clientId, $spouseId, $addressId);
 		
+		//Create entris for house members
+		if($client->getHMembers()){
+			$householdId = $this->db->lastInsertId('household');
+			$this->InsertHMembers($client->getHMembers, $householdId);
+		}
+		
 		//Create the employment entry
-		$this->InsertEmployment($clientId, $client->getEmployment());
+		if($client->getEmployment())
+			$this->InsertEmployment($clientId, $client->getEmployment());
 		
 		//Update do-not-help
 		if($client->isDoNotHelp())
@@ -316,6 +323,19 @@ class App_Service_MemberService {
 			'spouse_id' => $spouseId,
 			'current_flag' => '1');
 		$this->db->insert('household', $householdData);
+	}
+	
+	private function InsertHMembers($members, $householdId){
+		foreach($members as $member){
+			$memberData = array(
+				'household_id' => $householdId,
+				'first_name' => $member->getFirstName(),
+				'last_name' => $member->getLastName(),
+				'relationship' => $member->getRelationship(),
+				'birthdate' => $member->getBirthDate(),
+				'left_date' => $member->getDepartDate());
+			$this->db->insert('hmember', $memberData);
+		}
 	}
 	
 	private function InsertEmployment($client_id, $employment){

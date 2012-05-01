@@ -47,6 +47,8 @@ class Application_Model_Impl_Client
     private $_spouseLast = null;
     
     private $_employment = null;
+    
+    private $_hmembers = null;
 
     /* Generic get/set methods: */
 
@@ -251,6 +253,15 @@ class Application_Model_Impl_Client
     
     public function getEmployment(){
         return $this->_employment;
+    }
+    
+    public function getHMembers(){
+        return $this->_hmembers;
+    }
+    
+    public function setHMembers($members){
+        $this->_hmembers = $members;
+        return $this;
     }
 
     /* Less generic helper methods: */

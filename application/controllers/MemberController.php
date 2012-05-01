@@ -12,10 +12,9 @@ class MemberController extends Zend_Controller_Action
     public function indexAction()
     {
         $this->view->pageTitle = "Open Cases";
-
-        $service           = new App_Service_Search();
         $userId            = Zend_Auth::getInstance()->getIdentity()->user_id;
-        $this->view->cases = $service->getOpenCasesByUserId($userId);
+	$memberService = new App_Service_MemberService();
+	$this->view->cases = $memberService->GetUserOpenCases($userId);
     }
     
     public function clientAction()
@@ -24,9 +23,8 @@ class MemberController extends Zend_Controller_Action
     	$this->view->form      = new Application_Model_ClientForm();
 
         if ($this->_hasParam('id')) {
-            $service = new App_Service_Member();
-            $client  = $service->getClientById($this->_getParam('id'));
-
+	    $memberService = new App_Service_MemberService();
+	    $client = $memberService->GetClientById($this->_getParam('id'));
             $this->prefillClient($this->view->form, $client);
         }
     }

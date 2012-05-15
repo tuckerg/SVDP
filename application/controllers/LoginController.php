@@ -109,23 +109,51 @@ class LoginController extends Zend_Controller_Action
         
         // find users info
         $service = new App_Service_LoginService();
-        $user = $service->getUserInfo($identity->user_id);
+        $username = $this->view->form->getValue('username');
+        
+        $user = $service->getUserInfo($username);
         
         // generate password and send e-mail if the account exists
         if($user){
-            $mail = new Zend_Mail();
-            $mail->setBodyText('Here is your temporary password. You will be prompted to change it at next login.');
-            $mail->setFrom('SVDP@noreply.com', 'System');
-            $mail->setSubject('Temporary Password');
+            $password = App_Password::generatePassword(10);
+            $service->updateUserPassword($username,$password);
             
-            $mail->send();
+            $mail = new Zend_Mail('utf-8');
+            $transport = new App_Mail_Transport_AmazonSES(
+            array(
+                'accessKey' => $_ENV["AWSPUB"],
+                'privateKey' => $_ENV["AWSPVT"]
+            ));
+            
+            $mail->setBodyHtml('Here is your temporary password. You will be required '
+                               . 'to changed it on your next login.' .
+                               '<br/><b>' . $password . '</b>');
+            $mail->setFrom('bagura@noctrl.edu', 'System');
+            $mail->addTo('bagura@noctrl.edu');
+            $mail->setSubject('SVDP Password Reset');
+            try{
+                $mail->send($transport);
+            }
+            catch(Exception $e)
+            {
+                var_dump($e);
+                exit();
+            }
             
             // Update DB with temp password
+            $admin = new App_Service_AdminService();
+            $admin->resetUserPassword($username,$password);
+            
+            $this->_forward('index', App_Resources::REDIRECT, null,
+                        Array( 'msg' => 'Your password will be emailed to you shortly.',
+                               'time' => 3,
+                               'controller' => App_Resources::INDEX,
+                               'action' => 'index'));
         }
         
         return $this->_helper->redirector('login');
     }
-    
+
     /**
      * Handles the logic for logging a user out
      *
@@ -143,21 +171,7 @@ class LoginController extends Zend_Controller_Action
      * @usedby LoginController::process()
      * @return void
      */
-    protected function getAuthAdapter()
-    {
-        // Get the database adapter
-        $db = Zend_Db_Table::getDefaultAdapter();
-        $adapter = new Zend_Auth_Adapter_DbTable($db);
-
-        // Set the parameters, user must be active.
-        $adapter
-            ->setTableName('user')
-            ->setIdentityColumn('user_id')
-            ->setCredentialColumn('password')
-            ->setCredentialTreatment('? and active_flag="1"');
-        ;
-        return($adapter);
-    }
+    
     /**
      * Handles the authentication of a user
      *
@@ -166,16 +180,13 @@ class LoginController extends Zend_Controller_Action
      * @param string $password
      * @return void
      */
+    //PASS THESE PARAMS IN SERVICE
     protected function authenticate($userid, $password)
     {
         $auth = Zend_Auth::getInstance();
-        $authAdapter = $this->getAuthAdapter();
         
-        // Set the user inputed values
-        $authAdapter
-            ->setIdentity($userid)
-            ->setCredential( hash('SHA256', App_Password::saltIt($password)) );
-        ;
+        $loginService = new App_Service_LoginService();
+        $authAdapter = $loginService->getAuthAdapter($userid, $password);
         
         // Authenticate the user
         $result = $auth->authenticate($authAdapter);
@@ -196,20 +207,9 @@ class LoginController extends Zend_Controller_Action
         // Get the users identity
         $identity = Zend_Auth::getInstance()->getIdentity();
         
-        // Set the identities role. This is strange.. It should already be set
-        // but for some reason the first request sent will not contain the role
-        // and will cause an error
-        //$identity->role = $data->role;
-        
         // Set the time out length
         $authSession = new Zend_Session_Namespace('Zend_Auth');
         $authSession->setExpirationSeconds($this->_timeout * 60);
-        
-        // Check if user needs password change. If so forward to change
-        //if($data->change_pswd == 1)
-        //{
-        //    return $this->_helper->redirector('change',App_Resources::LOGIN);
-        //}
         
         $this->forwardUser();
     }
@@ -259,12 +259,12 @@ class LoginController extends Zend_Controller_Action
 
         $identity = Zend_Auth::getInstance()->getIdentity(); 
         $service = new App_Service_LoginService();
-        $service->updateUserPassword($identity->user_id,hash('SHA256', App_Password::saltIt($pwd)));
+        $service->updateUserPassword($identity->user_id,$pwd);
         $identity->change_pswd = 0;
         
         $this->_forward('index', App_Resources::REDIRECT, null,
                         Array( 'msg' => 'Your password has been changed successfully!',
-                               'time' => 5,
+                               'time' => 3,
                                'controller' => App_Resources::INDEX,
                                'action' => 'index'));
     }
